@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.admin.domain.privacypolicy.dao.PrivacyPolicyDAO">
+
+    <!-- 개인정보처리방침 리스트 조회 -->
+    <select id="selectPrvcPlcyList" parameterType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$SearchParam"
+            resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$ListResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_NO ID,
+            tppp.PRVC_PRCS_PLCY_REG_DT STARTDATE,
+            tppp.PRVC_PRCS_PLCY_END_DT ENDDATE,
+            tppp.FRST_JOB_DT CREATED
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        <where>
+        AND tppp.DEL_YN = 'N'
+            <if test="startDate != null and endDate != null">
+                AND tppp.PRVC_PRCS_PLCY_REG_DT BETWEEN #{startDate} AND #{endDate}
+            </if>
+        </where>
+        ORDER BY
+            tppp.PRVC_PRCS_PLCY_NO DESC
+    </select>
+
+    <!-- 개인정보처리방침 상세 조회 -->
+    <select id="selectPrvcPlcyDetail" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$DetailResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_REG_DT STARTDATE,
+            tppp.PRVC_PRCS_PLCY_END_DT ENDDATE,
+            tppp.PRVC_PRCS_PLCY_CN CONTENT,
+            tppp.FRST_JOB_DT CREATED
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE tppp.PRVC_PRCS_PLCY_NO = #{entityId}
+    </select>
+
+    <!-- 개인정보처리방침 Pk List 조회 -->
+    <select id="selectPrvcPlcyPkList" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$PrvcPlcyPkListResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_NO ID,
+            tppp.PRVC_PRCS_PLCY_END_DT ENDDATE
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE tppp.DEL_YN = 'N'
+        ORDER BY
+            tppp.PRVC_PRCS_PLCY_NO DESC
+    </select>
+
+    <!-- 개인정보처리방침 Pk Max값 조회 -->
+    <select id="selectPrvcPlcyPkMax" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$PrvcPlcyPkMaxResult">
+        SELECT
+            MAX(tppp.PRVC_PRCS_PLCY_NO) ID
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE tppp.DEL_YN = 'N'
+    </select>
+
+    <!-- 이전 개인정보처리방침 데이터 조회 -->
+    <select id="selectBeforeDataInfo" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$BeforeDataInfoResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_NO ID,
+            tppp.PRVC_PRCS_PLCY_REG_DT STARTDATE,
+            tppp.PRVC_PRCS_PLCY_END_DT ENDDATE,
+            tppp.PRVC_PRCS_PLCY_CN CONTENT
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        ORDER BY
+            tppp.PRVC_PRCS_PLCY_NO DESC
+        LIMIT 1
+    </select>
+
+    <!-- 최근 개인정보처리방침 시행일자 조회 -->
+    <select id="selectFirstBeginDt" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$FirstBeginDtResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_REG_DT STARTDATE
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE tppp.PRVC_PRCS_PLCY_NO = #{entityId}
+        AND tppp.DEL_YN = 'N'
+    </select>
+
+    <!-- 개인정보처리방침 데이터 체크 -->
+    <select id="selectAll" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$AllResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_NO ID,
+            tppp.PRVC_PRCS_PLCY_REG_DT STARTDATE,
+            tppp.PRVC_PRCS_PLCY_END_DT ENDDATE,
+            tppp.FRST_JOB_DT CREATED
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE DEL_YN = 'N'
+    </select>
+
+    <!-- 개인정보처리방침 등록 -->
+    <insert id="insertPrvcPlcy" parameterType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$InsertParam" useGeneratedKeys="true" keyProperty="entityId">
+        INSERT INTO TB_PRVC_PRCS_PLCY
+        (
+            PRVC_PRCS_PLCY_REG_DT,
+            PRVC_PRCS_PLCY_CN,
+            FRST_JOB_OBJ,
+            FRST_JOB_DT,
+            LAST_JOB_OBJ,
+            LAST_JOB_DT
+        )
+        VALUES
+        (
+            #{startDate},
+            #{content},
+            #{frstJobObj},
+            NOW(),
+            #{lastJobObj},
+            NOW()
+        )
+    </insert>
+
+    <!-- 시행일자 하루 빼기 -->
+    <select id="selectBeforeDate" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$BeforeDateResult"
+            parameterType="long">
+        SELECT
+            DATE_FORMAT(tppp.ENDDATE, '%Y%m%d') ENDDATE
+        FROM
+            (
+                SELECT
+                    DATE_SUB(tppp.PRVC_PRCS_PLCY_REG_DT, INTERVAL 1 DAY) ENDDATE
+                FROM
+                    TB_PRVC_PRCS_PLCY tppp
+                WHERE tppp.DEL_YN = 'N'
+                  AND tppp.PRVC_PRCS_PLCY_NO = #{entityId}
+            ) tppp
+    </select>
+
+    <!-- 이전 종료일자 하루 더하기 -->
+    <select id="selectPlusBeforeEndDt" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$BeforeDatePlusResult">
+        SELECT
+            DATE_FORMAT(tppp.STARTDATE, '%Y%m%d') STARTDATE
+        FROM
+            (
+                SELECT
+                    DATE_ADD(tppp.PRVC_PRCS_PLCY_END_DT, INTERVAL 1 DAY) STARTDATE
+                FROM
+                    TB_PRVC_PRCS_PLCY tppp
+                WHERE tppp.DEL_YN = 'N'
+                  AND tppp.PRVC_PRCS_PLCY_NO = #{entityId}
+            ) tppp
+    </select>
+
+    <!-- 최신 등록 이전 데이터 조회 -->
+    <select id="selectNewBeforeData" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$NewBeforeDataResult">
+        SELECT
+            MAX(tppp.PRVC_PRCS_PLCY_NO) ID
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE tppp.PRVC_PRCS_PLCY_END_DT IS NOT NULL
+        AND tppp.DEL_YN = 'N'
+    </select>
+
+    <!-- PK MAX - 1 한 PK 조회 -->
+    <select id="selectMinusPK" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$MinusPKResult">
+        SELECT
+            MAX(PRVC_PRCS_PLCY_NO) ID
+        FROM
+            TB_PRVC_PRCS_PLCY
+        WHERE DEL_YN = 'N'
+        AND PRVC_PRCS_PLCY_END_DT IS NOT NULL
+    </select>
+
+    <!-- 최신 등록된 개인정보 조회 -->
+    <select id="selectFirstInsertPrcy" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$FirstInsertPrcyResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_NO ID,
+            tppp.PRVC_PRCS_PLCY_CN CONTENT
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE tppp.DEL_YN = 'N'
+        ORDER BY
+            tppp.PRVC_PRCS_PLCY_NO DESC
+        LIMIT 1
+    </select>
+
+    <!-- 이전 시행일자 조회 -->
+    <select id="selectPrvsStartDate" resultType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$PrvsStartDateResult">
+        SELECT
+            tppp.PRVC_PRCS_PLCY_REG_DT START_DATE
+        FROM
+            TB_PRVC_PRCS_PLCY tppp
+        WHERE tppp.DEL_YN = 'N'
+        AND tppp.PRVC_PRCS_PLCY_END_DT IS NOT NULL
+        ORDER BY
+            tppp.PRVC_PRCS_PLCY_NO DESC
+        LIMIT 1
+    </select>
+
+    <!-- 이전 종료일자 Null 수정 -->
+    <update id="updateBeforeEndDtNull" parameterType="long">
+        UPDATE TB_PRVC_PRCS_PLCY
+        SET
+            PRVC_PRCS_PLCY_END_DT = NULL
+        WHERE PRVC_PRCS_PLCY_NO = #{entityId}
+    </update>
+
+    <!-- 종료일자 하루 더하기 -->
+    <update id="updateEndDtPlus" parameterType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$UpdateParam">
+        UPDATE TB_PRVC_PRCS_PLCY
+        SET
+            PRVC_PRCS_PLCY_REG_DT = #{startDate}
+        WHERE PRVC_PRCS_PLCY_NO = #{entityId}
+    </update>
+
+    <!-- 이전 날짜 수정 -->
+    <update id="updateBeforeDate" parameterType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$BeforeDateParam">
+        UPDATE TB_PRVC_PRCS_PLCY
+        SET
+            PRVC_PRCS_PLCY_END_DT = #{endDate}
+        WHERE PRVC_PRCS_PLCY_NO = #{entityId}
+    </update>
+
+    <!-- 개인정보처리방침 수정 -->
+    <update id="updatePrvcPlcy" parameterType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$UpdateParam">
+        UPDATE TB_PRVC_PRCS_PLCY
+        SET
+            PRVC_PRCS_PLCY_REG_DT = #{startDate},
+            PRVC_PRCS_PLCY_CN = #{content},
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE PRVC_PRCS_PLCY_NO = #{entityId}
+    </update>
+
+    <!-- 개인정보처리방침 삭제 -->
+    <delete id="deletePrvcPlcy" parameterType="kr.ge.kwdi.gep.admin.domain.privacypolicy.dto.PrivacyPolicyListVO$DeleteParam">
+        UPDATE TB_PRVC_PRCS_PLCY
+        SET
+            DEL_YN = 'Y',
+            LAST_JOB_DT = NOW()
+        WHERE PRVC_PRCS_PLCY_NO IN <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </delete>
+</mapper>

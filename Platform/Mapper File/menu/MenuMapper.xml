@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.platform.domain.menu.dao.MenuDAO">
+    <select id="selectPlatformMenuList" resultType="kr.ge.kwdi.gep.platform.domain.menu.dto.MenuDTO">
+        /*kr.ge.kwdi.gep.platform.domain.menu.dao.MenuDAO.selectPlatformMenuList [플랫폼 메뉴 조회]*/
+        WITH RECURSIVE CTE AS (
+            SELECT
+                MENU_NO,
+                MENU_NM,
+                UP_MENU_ID,
+                1 DEPTH,
+                MENU_URL_ADDR MENU_PATH,
+                MENU_CD
+            FROM
+                TB_MENU
+            WHERE
+                MENU_LVL = 1
+            AND UP_MENU_ID IS NOT NULL
+            AND MENU_INDCT_YN = 'Y'
+            AND MENU_EXPLN = 'platform'
+            UNION ALL
+            SELECT
+                TM.MENU_NO,
+                TM.MENU_NM,
+                TM.UP_MENU_ID,
+                DEPTH + 1 DEPTH,
+                TM.MENU_URL_ADDR MENU_PATH,
+                TM.MENU_CD
+            FROM
+                TB_MENU TM
+                INNER JOIN CTE ON CTE.MENU_NO = TM.UP_MENU_ID
+            WHERE
+                TM.MENU_INDCT_YN = 'Y'
+            AND TM.MENU_EXPLN = 'platform'
+        )
+        SELECT
+            MENU_NO,
+            MENU_NM,
+            UP_MENU_ID,
+            DEPTH,
+            MENU_PATH,
+            MENU_CD
+        FROM
+            CTE
+    </select>
+
+    <select id="selectMenuRootNodesInfo"
+            resultType="kr.ge.kwdi.gep.platform.domain.menu.dto.MenuDTO$RootNodes">
+        /* selectMenuRootNodesInfo [최상위 메뉴 조회] */
+        SELECT
+            MENU_NO,
+            MENU_NM,
+            MENU_CD
+        FROM TB_MENU
+        WHERE MENU_LVL = 1
+          AND MENU_CD IS NOT NULL
+          AND MENU_EXPLN = 'platform'
+          AND MENU_INDCT_YN = 'Y'
+    </select>
+
+    <select id="selectSubNodesInfo"
+            resultType="kr.ge.kwdi.gep.platform.domain.menu.dto.MenuDTO$SubNodes">
+        /* selectSubNodesInfo [메뉴 별 자료유형 조회] */
+        SELECT
+            T2.UP_MENU_ID,
+            T2.MENU_NM,
+            T2.MENU_CD
+        FROM TB_MENU T1
+             INNER JOIN TB_MENU T2 ON T1.MENU_NO = T2.UP_MENU_ID
+        WHERE
+              T2.MENU_EXPLN = 'platform'
+          AND T2.MENU_LVL != 1
+          AND T2.MENU_INDCT_YN = 'Y'
+          AND T2.MENU_CD IS NOT NULL;
+    </select>
+</mapper>

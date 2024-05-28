@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.admin.domain.faq.dao.FaqDAO">
+
+    <!-- Faq 목록 조회 -->
+    <select id="selectFaqList" parameterType="kr.ge.kwdi.gep.admin.domain.faq.dto.FaqVO$SearchParam"
+            resultType="kr.ge.kwdi.gep.admin.domain.faq.dto.FaqVO$ListResult">
+        SELECT
+            tf.FAQ_NO ID,
+            tf.FAQ_TTL QUESTION,
+            tf.FAQ_CN ANSWER,
+            tf.FRST_JOB_OBJ,
+            tf.FRST_JOB_DT,
+            CASE
+                WHEN tf.PSTD_CD = 'Y' THEN
+                    '게시'
+                ELSE
+                    '중단'
+            END VISIBLE
+        FROM
+            TB_FAQ tf
+        <where>
+        AND tf.DEL_YN = 'N'
+            <if test="q != null">
+                <if test="searchType == 'all'">
+                    AND tf.FAQ_TTL LIKE CONCAT('%', #{q}, '%') OR tf.FAQ_CN LIKE CONCAT('%', #{q}, '%')
+                </if>
+                <if test="searchType == 'question'">
+                    AND tf.FAQ_TTL LIKE CONCAT('%', #{q}, '%')
+                </if>
+                <if test="searchType == 'answer'">
+                    AND tf.FAQ_CN LIKE CONCAT('%', #{q}, '%')
+                </if>
+            </if>
+        </where>
+        ORDER BY
+            tf.FAQ_NO DESC
+    </select>
+
+    <!-- Faq 상세 조회 -->
+    <select id="selectFaqDetail" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.faq.dto.FaqVO$DetailResult">
+        SELECT
+            FAQ_NO ID,
+            FAQ_TTL QUESTION,
+            FAQ_CN ANSWER,
+            FAQ_ORDR ORDR,
+            PSTD_CD VISIBLE
+        FROM
+            TB_FAQ
+        WHERE FAQ_NO = #{entityId}
+    </select>
+
+    <!-- Faq순서 + 1 증가값 조회 -->
+    <select id="selectOrdrCount" resultType="kr.ge.kwdi.gep.admin.domain.faq.dto.FaqVO$OrdrCountResult">
+        SELECT
+            COUNT(tf.FAQ_ORDR) + 1 ORDR_COUNT
+        FROM
+            TB_FAQ tf
+        WHERE tf.DEL_YN = 'N'
+    </select>
+
+    <!-- Faq 리스트 생성 -->
+    <insert id="insertFaq" parameterType="kr.ge.kwdi.gep.admin.domain.faq.dto.FaqVO$InsertParam">
+        INSERT INTO TB_FAQ
+        (
+            FAQ_TTL,
+            FAQ_CN,
+            FAQ_ORDR,
+            FRST_JOB_OBJ,
+            FRST_JOB_DT,
+            LAST_JOB_OBJ,
+            LAST_JOB_DT,
+            PSTD_CD
+        )
+        VALUES
+        (
+            #{question},
+            #{answer},
+            #{ordr},
+            #{frstJobObj},
+            NOW(),
+            #{lastJobObj},
+            NOW(),
+            #{visible}
+        )
+    </insert>
+
+    <!-- Faq 리스트 수정 -->
+    <update id="updateFaq" parameterType="kr.ge.kwdi.gep.admin.domain.faq.dto.FaqVO$UpdateParam">
+        UPDATE TB_FAQ
+        SET
+            FAQ_TTL = #{question},
+            FAQ_CN = #{answer},
+            PSTD_CD = #{visible},
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE FAQ_NO = #{entityId}
+    </update>
+
+    <!-- Faq 리스트 삭제 -->
+    <delete id="deleteFaq" parameterType="kr.ge.kwdi.gep.admin.domain.faq.dto.FaqVO$DeleteParam">
+        UPDATE TB_FAQ
+        SET
+            DEL_YN = 'Y',
+            LAST_JOB_DT = NOW()
+        WHERE FAQ_NO IN <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.admin.domain.termsUse.dao.TermsUseDAO">
+
+    <!-- 이용약관 목록 조회 -->
+    <select id="selectTermsUseList" parameterType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$SearchParam"
+            resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$ListResult">
+        SELECT
+            tum.UTZTN_MNG_NO ID,
+            tum.UTZTN_MNG_REG_DT STARTDATE,
+            tum.UTZTN_MNG_END_DT ENDDATE,
+            tum.FRST_JOB_DT CREATED
+        FROM
+            TB_UTZTN_MNG tum
+        <where>
+        AND tum.DEL_YN = 'N'
+            <if test="startDate != null and endDate != null">
+                AND tum.UTZTN_MNG_REG_DT BETWEEN #{startDate} AND #{endDate}
+            </if>
+        </where>
+        ORDER BY
+            tum.UTZTN_MNG_NO DESC
+    </select>
+
+    <!-- 이용약관 상세 조회 -->
+    <select id="selectTermsUseDetail" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$DetailResult">
+        SELECT
+            tum.UTZTN_MNG_NO ID,
+            tum.UTZTN_MNG_CN CONTENT,
+            tum.UTZTN_MNG_REG_DT STARTDATE,
+            tum.UTZTN_MNG_END_DT ENDDATE,
+            tum.FRST_JOB_DT CREATED
+        FROM
+            TB_UTZTN_MNG tum
+            LEFT JOIN TB_TRMS_AGRE tta ON tum.UTZTN_MNG_NO = tta.TRMS_AGRE_SN
+            LEFT JOIN TB_TRMS_DTL ttd ON tum.UTZTN_MNG_NO = ttd.TRMS_VER
+            LEFT JOIN TB_TRMS tt ON tum.UTZTN_MNG_NO = tt.TRMS_NO
+        WHERE tum.UTZTN_MNG_NO = #{entityId}
+    </select>
+
+    <!-- 최근 이용약관 시행일자 조회 -->
+    <select id="selectFirstBeginDt" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$FirstBeginDtResult">
+        SELECT
+            tum.UTZTN_MNG_REG_DT STARTDATE
+        FROM
+            TB_UTZTN_MNG tum
+        WHERE tum.UTZTN_MNG_NO = #{entityId}
+        AND tum.DEL_YN = 'N'
+    </select>
+
+    <!-- 이용약관 등록 -->
+    <insert id="insertTermsUse" parameterType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$InsertParam" useGeneratedKeys="true" keyProperty="entityId">
+        INSERT INTO TB_UTZTN_MNG
+        (
+            UTZTN_MNG_CN,
+            FRST_JOB_OBJ,
+            FRST_JOB_DT,
+            LAST_JOB_OBJ,
+            LAST_JOB_DT,
+            UTZTN_MNG_REG_DT
+        )
+        VALUES
+        (
+            #{content},
+            #{frstJobObj},
+            NOW(),
+            #{lastJobObj},
+            NOW(),
+            #{startDate}
+        );
+    </insert>
+
+    <!-- 시행일자 하루 빼기 -->
+    <select id="selectBeforeDate" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$BeforeDateResult" parameterType="long">
+        SELECT
+            DATE_FORMAT(tum.ENDDATE, '%Y%m%d') ENDDATE
+        FROM
+            (
+                SELECT
+                    DATE_SUB(tum.UTZTN_MNG_REG_DT, INTERVAL 1 DAY) ENDDATE
+                FROM
+                    TB_UTZTN_MNG tum
+                WHERE tum.DEL_YN = 'N'
+                AND tum.UTZTN_MNG_NO = #{entityId}
+            ) tum
+    </select>
+
+    <!-- 이전 종료일자 하루 더하기 -->
+    <select id="selectPlusBeforeEndDt" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$BeforeDatePlusResult">
+        SELECT
+            DATE_FORMAT(tum.STARTDATE, '%Y%m%d') STARTDATE
+        FROM
+            (
+                SELECT
+                    DATE_ADD(tum.UTZTN_MNG_END_DT, INTERVAL 1 DAY) STARTDATE
+                FROM
+                    TB_UTZTN_MNG tum
+                WHERE tum.DEL_YN = 'N'
+                AND tum.UTZTN_MNG_NO = #{entityId}
+            ) tum
+    </select>
+
+    <!-- 최신 등록 이전 데이터 조회 -->
+    <select id="selectNewBeforeData" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$NewBeforeDataResult">
+        SELECT
+            MAX(tum.UTZTN_MNG_NO) ID
+        FROM
+            TB_UTZTN_MNG tum
+        WHERE tum.UTZTN_MNG_END_DT IS NOT NULL
+        AND tum.DEL_YN = 'N'
+    </select>
+
+    <!-- 이전 날짜 수정 -->
+    <update id="updateBeforeDate" parameterType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$BeforeDateParam">
+        UPDATE TB_UTZTN_MNG
+        SET
+            UTZTN_MNG_END_DT = #{endDate}
+        WHERE UTZTN_MNG_NO = #{entityId}
+    </update>
+
+    <!-- 이용약관 Pk Max값 조회 -->
+    <select id="selectUtztnMngNo" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$MngNoResult">
+        SELECT
+            MAX(UTZTN_MNG_NO) ID
+        FROM
+            TB_UTZTN_MNG
+        WHERE DEL_YN = 'N'
+    </select>
+
+    <!-- 이용약관 Pk List 조회 -->
+    <select id="selectTermsPkList" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$TermsPkListResult">
+        SELECT
+            tum.UTZTN_MNG_NO ID,
+            tum.UTZTN_MNG_END_DT ENDDATE
+        FROM
+            TB_UTZTN_MNG tum
+        WHERE tum.DEL_YN = 'N'
+        ORDER BY
+            tum.UTZTN_MNG_NO DESC
+    </select>
+
+    <!-- 이전 이용약관 데이터 조회 -->
+    <select id="selectBeforeDataInfo" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$BeforeDataInfoResult">
+        SELECT
+            tum.UTZTN_MNG_NO ID,
+            tum.UTZTN_MNG_REG_DT STARTDATE,
+            tum.UTZTN_MNG_END_DT ENDDATE,
+            tum.UTZTN_MNG_CN CONTENT
+        FROM
+            TB_UTZTN_MNG tum
+        ORDER BY
+            tum.UTZTN_MNG_NO DESC LIMIT 1
+    </select>
+
+    <!-- 이전 종료일자 Null 수정 -->
+    <update id="updateBeforeEndDtNull" parameterType="long">
+        UPDATE TB_UTZTN_MNG
+        SET
+            UTZTN_MNG_END_DT = NULL
+        WHERE UTZTN_MNG_NO = #{entityId}
+    </update>
+
+    <!-- 이용약관 데이터 체크 -->
+    <select id="selectAll" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$AllResult">
+        SELECT
+            tum.UTZTN_MNG_NO ID,
+            tum.UTZTN_MNG_REG_DT STARTDATE,
+            tum.UTZTN_MNG_END_DT ENDDATE,
+            tum.FRST_JOB_DT CREATED
+        FROM
+            TB_UTZTN_MNG tum
+        WHERE DEL_YN = 'N'
+    </select>
+
+    <!-- PK MAX - 1 한 PK 조회 -->
+    <select id="selectMinusPK" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$MinusPKResult">
+        SELECT
+            MAX(UTZTN_MNG_NO) ID
+        FROM
+            TB_UTZTN_MNG
+        WHERE DEL_YN = 'N'
+        AND UTZTN_MNG_END_DT IS NOT NULL
+    </select>
+
+    <!-- 최신 등록된 이용약관 조회 -->
+    <select id="selectFirstInsertTerms" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$FirstInsertTermsResult">
+        SELECT
+            tum.UTZTN_MNG_NO ID,
+            tum.UTZTN_MNG_CN CONTENT
+        FROM
+            TB_UTZTN_MNG tum
+        WHERE tum.DEL_YN = 'N'
+        ORDER BY
+            tum.UTZTN_MNG_NO DESC
+        LIMIT 1
+    </select>
+
+    <!-- 이전 시행일자 조회 -->
+    <select id="selectPrvsStartDate" resultType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$PrvsStartDateResult">
+        SELECT
+            tum.UTZTN_MNG_REG_DT START_DATE
+        FROM
+            TB_UTZTN_MNG tum
+        WHERE tum.DEL_YN = 'N'
+        AND tum.UTZTN_MNG_END_DT IS NOT NULL
+        ORDER BY
+            tum.UTZTN_MNG_NO DESC
+        LIMIT 1
+    </select>
+
+    <!-- 이용약관 수정 -->
+    <update id="updateTermsUse" parameterType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$UpdateParam">
+        UPDATE TB_UTZTN_MNG
+        SET
+            UTZTN_MNG_REG_DT = #{startDate},
+            UTZTN_MNG_CN = #{content},
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE UTZTN_MNG_NO = #{entityId}
+    </update>
+
+    <!-- 종료일자 하루 더하기 -->
+    <update id="updateEndDtPlus" parameterType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$UpdateParam">
+        UPDATE TB_UTZTN_MNG
+        SET
+            UTZTN_MNG_REG_DT = #{startDate}
+        WHERE UTZTN_MNG_NO = #{entityId}
+    </update>
+
+    <!-- 이용약관 삭제 -->
+    <delete id="deleteTermsUse" parameterType="kr.ge.kwdi.gep.admin.domain.termsUse.dto.TermsUseListVO$DeleteParam">
+        UPDATE TB_UTZTN_MNG a
+        SET
+            a.DEL_YN = 'Y',
+            a.LAST_JOB_DT = NOW()
+        WHERE a.UTZTN_MNG_NO IN <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </delete>
+</mapper>

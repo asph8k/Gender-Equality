@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.admin.domain.apiApply.dao.ApiApplyDAO">
+
+    <!-- API 신청 목록 조회 -->
+    <select id="selectApiApplyList" parameterType="kr.ge.kwdi.gep.admin.domain.apiApply.dto.ApiApplyVO$SearchParam"
+            resultType="kr.ge.kwdi.gep.admin.domain.apiApply.dto.ApiApplyVO$ListResult">
+        SELECT
+            taa.API_APLY_NO ID,
+            taa.APLY_APLCNT_NM NAME,
+                CONCAT(SUBSTRING(taa.APLY_APLCNT_TELNO, 1, 3), "-", SUBSTRING(taa.APLY_APLCNT_TELNO, 4, 4), "-", SUBSTRING(taa.APLY_APLCNT_TELNO, 8, 11)) TELNUMBER,
+            taa.APLY_APLCNT_INST_NM INSTNAME,
+            taa.APLY_APLCNT_EML EMAIL,
+            taa.API_USE_SRVC_NM SERVICENAME,
+            taa.API_USE_PRPS PURPOSE,
+            CASE
+                WHEN taa.API_PERM_STTS = 'Y' THEN
+                    '승인'
+                WHEN taa.API_PERM_STTS = 'N' THEN
+                    '반려'
+                ELSE
+                    '대기'
+            END VISIBLE,
+            taa.API_PERM_DT APPLYDATE,
+            taa.DEL_YN ,
+            taa.API_KEY
+        FROM
+            TB_API_APLY taa LEFT JOIN TB_API_EML_CERT taec
+            ON taa.API_APLY_NO = taec.API_APLY_NO
+        <where>
+            AND taa.DEL_YN = 'N'
+            <if test="q != null">
+                <if test="searchType == 'applyName'">
+                    AND taa.APLY_APLCNT_NM LIKE CONCAT('%',#{q},'%')
+                </if>
+                <if test="searchType == 'applyInstNm'">
+                    AND taa.APLY_APLCNT_INST_NM LIKE CONCAT('%',#{q},'%')
+                </if>
+                <if test="searchType == 'applyEml'">
+                    AND taa.APLY_APLCNT_EML LIKE CONCAT('%',#{q},'%')
+                </if>
+            </if>
+        </where>
+        ORDER BY
+            taa.API_APLY_NO DESC
+    </select>
+
+    <!-- API 신청 상세 조회 -->
+    <select id="selectApiApplyDetail" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.apiApply.dto.ApiApplyVO$DetailResult">
+        SELECT
+            taa.API_APLY_NO ID,
+            taa.APLY_APLCNT_NM NAME,
+            CONCAT(SUBSTRING(taa.APLY_APLCNT_TELNO, 1, 3), "-", SUBSTRING(taa.APLY_APLCNT_TELNO, 4, 4), "-", SUBSTRING(taa.APLY_APLCNT_TELNO, 8, 11)) TELNUMBER,
+            taa.APLY_APLCNT_INST_NM INSTNAME,
+            taa.APLY_APLCNT_EML EMAIL,
+            taa.API_USE_SRVC_NM SERVICENAME,
+            taa.API_USE_PRPS PURPOSE,
+            taa.API_KEY,
+            CASE
+                WHEN taa.API_PERM_STTS = 'Y' THEN
+                    '승인'
+                WHEN taa.API_PERM_STTS = 'N' THEN
+                    '반려'
+                ELSE
+                    '대기'
+            END VISIBLE
+        FROM
+            TB_API_APLY taa
+        WHERE taa.API_APLY_NO = #{entityId}
+    </select>
+
+    <!-- 반려 조회 -->
+    <select id="selectRjct" resultType="kr.ge.kwdi.gep.admin.domain.apiApply.dto.ApiApplyVO$RjctResult" parameterType="long">
+        SELECT
+            taa.API_APLY_NO ID,
+            taa.RJCT_WRTR NAME,
+            taa.RJCT_RSN CONTENT,
+            taa.RJCT_DT CREATED
+        FROM
+            TB_API_APLY taa
+        WHERE taa.API_APLY_NO = #{entityId}
+    </select>
+
+    <!-- API 신청 허용 상태 수정 -->
+    <update id="updateApiApplySttsCd" parameterType="kr.ge.kwdi.gep.admin.domain.apiApply.dto.ApiApplyVO$UpdateParam">
+        UPDATE TB_API_APLY
+        SET
+            API_PERM_STTS = #{visible},
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE API_APLY_NO = #{entityId}
+    </update>
+
+    <!-- 반려 등록 -->
+    <update id="updateRjct" parameterType="kr.ge.kwdi.gep.admin.domain.apiApply.dto.ApiApplyVO$RjctParam">
+        UPDATE TB_API_APLY
+        SET
+            RJCT_WRTR = #{name},
+            RJCT_RSN = #{content},
+            RJCT_DT = NOW(),
+            API_PERM_STTS = 'N',
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE API_APLY_NO = #{entityId}
+    </update>
+
+    <!-- API 신청 삭제 여부 수정 -->
+    <update id="updateApiApplyDelYn" parameterType="kr.ge.kwdi.gep.admin.domain.apiApply.dto.ApiApplyVO$DeleteParam">
+        UPDATE TB_API_APLY
+        SET
+            DEL_YN = 'Y',
+            LAST_JOB_DT = NOW()
+        WHERE API_APLY_NO IN <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </update>
+
+    <!-- 승인 등록 -->
+    <update id="updateAprv" parameterType="list">
+        UPDATE TB_API_APLY
+        SET
+            API_PERM_STTS = 'Y'
+        WHERE API_APLY_NO IN <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </update>
+</mapper>

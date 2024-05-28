@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.admin.domain.relatedInst.dao.RelatedInstDAO">
+    <!-- 유관기관 목록 조회 -->
+    <select id="selectRltdInstList" parameterType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$SearchParam"
+            resultType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$RltdInstListResult">
+        SELECT
+            tri.RLTD_INST_NO ID,
+            tri.RLTD_INST_NM NAME,
+            tri.IMG_FILE_ORGNL_NM FILEORIGINAL,
+            tri.IMG_FILE_ACTL_STRG_NM FILESTORAGE,
+            tri.IMG_FILE_SIZE FILESIZE,
+            tri.RLTD_INST_URL_ADDR URL,
+            tri.RLTD_INST_INDCT_YN  VISIBLE,
+            tri.FRST_JOB_DT CREATED
+        FROM
+            TB_RLTD_INST tri
+        <where>
+            AND tri.DEL_YN = 'N'
+            <if test="q != null">
+                <if test="searchType == 'title'">
+                    AND tri.RLTD_INST_NM LIKE CONCAT('%', #{q}, '%')
+                </if>
+            </if>
+        </where>
+        ORDER BY
+            tri.RLTD_INST_NO DESC
+    </select>
+
+    <!-- 유관기관 상세 조회 -->
+    <select id="selectRltdInstDtl" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$RltdInstDetailResult">
+        SELECT
+            tri.RLTD_INST_NO ID,
+            tri.RLTD_INST_NM NAME,
+            tri.RLTD_INST_URL_ADDR URL,
+            tri.IMG_FILE_ORGNL_NM FILEORIGINAL,
+            tri.IMG_FILE_ACTL_STRG_NM FILESTORAGE,
+            tri.IMG_FILE_SIZE FILESIZE,
+            tri.RLTD_INST_INDCT_YN VISIBLE,
+            tri.RMRK,
+            tri.FRST_JOB_DT CREATED
+        FROM
+            TB_RLTD_INST tri
+        WHERE tri.RLTD_INST_NO = #{entityId}
+    </select>
+
+    <!-- 유관기관 이미지 파일 조회 -->
+    <select id="selectImgFileDtl" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$ImgFileDtlResult">
+        SELECT
+            tri.RLTD_INST_NO ID,
+            tri.IMG_FILE_ORGNL_NM ORIGINALNAME,
+            tri.IMG_FILE_ACTL_STRG_NM STORAGENAME,
+            tri.IMG_FILE_SIZE IMGSIZE,
+            tri.IMG_FILE_ORDR ORDR
+        FROM
+            TB_RLTD_INST tri
+        WHERE tri.DEL_YN = 'N'
+        AND tri.RLTD_INST_NO = #{entityId}
+    </select>
+
+    <!-- 유관기관 등록 -->
+    <insert id="insertRltdInst" parameterType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$RltdInstInsertParam" useGeneratedKeys="true" keyProperty="entityId">
+        INSERT INTO TB_RLTD_INST
+        (
+            RLTD_INST_NM,
+            RLTD_INST_URL_ADDR,
+            RLTD_INST_INDCT_YN,
+            RMRK,
+            IMG_FILE_ORGNL_NM,
+            IMG_FILE_ACTL_STRG_NM,
+            IMG_FILE_SIZE,
+            FRST_JOB_OBJ,
+            FRST_JOB_DT,
+            LAST_JOB_OBJ,
+            LAST_JOB_DT
+        )
+        VALUES
+        (
+            #{name},
+            #{url},
+            #{visible},
+            #{rmrk},
+            #{originalName},
+            #{storageName},
+            #{fileSize},
+            #{frstJobObj},
+            NOW(),
+            #{lastJobObj},
+            NOW()
+        )
+    </insert>
+
+    <!-- 유관기관 수정 -->
+    <update id="updateRltdInst" parameterType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$RltdInstUpdateParam">
+        UPDATE TB_RLTD_INST
+        SET
+            RLTD_INST_NM = #{name},
+            RLTD_INST_URL_ADDR = #{url},
+            RLTD_INST_INDCT_YN = #{visible},
+            RMRK = #{rmrk},
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE RLTD_INST_NO = #{entityId}
+    </update>
+
+    <!-- 유관기관 수정 이미지 포함 -->
+    <update id="updateRltdImg" parameterType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$RltdInstUpdateParam">
+        UPDATE TB_RLTD_INST
+        SET
+            RLTD_INST_NM = #{name},
+            RLTD_INST_URL_ADDR = #{url},
+            RLTD_INST_INDCT_YN = #{visible},
+            RMRK = #{rmrk},
+            IMG_FILE_ORGNL_NM = #{originalName},
+            IMG_FILE_ACTL_STRG_NM = #{storageName},
+            IMG_FILE_SIZE = #{fileSize},
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE RLTD_INST_NO = #{entityId}
+    </update>
+    
+    <!-- 유관기관 삭제 -->
+    <update id="deleteRltdInst" parameterType="kr.ge.kwdi.gep.admin.domain.relatedInst.dto.RelatedInstVO$RltdInstDeleteParam">
+        UPDATE TB_RLTD_INST
+        SET
+            DEL_YN = 'Y',
+            LAST_JOB_DT = NOW()
+        WHERE RLTD_INST_NO IN <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </update>
+</mapper>

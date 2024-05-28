@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.platform.domain.notice.dao.NoticeDAO">
+    <select id="selectNoticeList"
+            parameterType="kr.ge.kwdi.gep.platform.domain.notice.dto.NoticeVO$Param"
+            resultType="kr.ge.kwdi.gep.platform.domain.notice.dto.NoticeVO$NoticeList">
+        /* selectNoticeList [공지사항 목록 조회] */
+        SELECT
+            TNMB.NTC_MTTR_NO,
+            TNMB.PST_TTL,
+            TNMB.FRST_JOB_DT,
+            TNMB.PST_ATCH_FILE_YN
+        FROM
+            TB_NTC_MTTR_BBS TNMB
+        <where>
+            AND TNMB.PST_DEL_YN = 'N'
+            AND TNMB.PST_CN_RLS_YN = 'Y'
+            <if test="q != null and q != ''">
+                <if test="searchType == 'title'">
+                    AND TNMB.PST_TTL LIKE CONCAT('%', #{q}, '%')
+                </if>
+            </if>
+        </where>
+        ORDER BY TNMB.FRST_JOB_DT DESC
+        LIMIT #{rowCount} OFFSET #{pageIndex}
+    </select>
+
+    <select id="selectNoticeCount"
+            parameterType="kr.ge.kwdi.gep.platform.domain.notice.dto.NoticeVO$Param"
+            resultType="int">
+        /* selectNoticeCount [공지사항 목록 조회] */
+        SELECT
+            COUNT(TNMB.NTC_MTTR_NO)
+        FROM
+            TB_NTC_MTTR_BBS TNMB
+        <where>
+            <if test="q != null and q != ''">
+                <if test="searchType == 'title'">
+                    AND TNMB.PST_TTL LIKE CONCAT('%', #{q}, '%')
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <select id="selectNoticeDetail"
+            resultType="kr.ge.kwdi.gep.platform.domain.notice.dto.NoticeVO$Detail">
+        /* selectNoticeDetail [공지사항 상세 조회] */
+        SELECT
+            TNMB.NTC_MTTR_NO,
+            TNMB.PST_TTL,
+            TNMB.PST_CN,
+            TNMB.FRST_JOB_DT,
+            TNMB.PST_ATCH_FILE_YN
+        FROM
+            TB_NTC_MTTR_BBS TNMB
+        WHERE
+            TNMB.NTC_MTTR_NO = #{ntcMttrNo}
+    </select>
+
+
+    <select id="selectNoticePrevious"
+            resultType="kr.ge.kwdi.gep.platform.domain.notice.dto.NoticeVO$Previous">
+        /* selectNoticePrevious [공지사항 이전 글 조회] */
+        SELECT
+            TNMB.NTC_MTTR_NO PREVIOUS_NOTICE_NO,
+            TNMB.PST_TTL PREVIOUS_NOTICE_TITLE
+        FROM
+            TB_NTC_MTTR_BBS TNMB
+        WHERE
+            TNMB.NTC_MTTR_NO <![CDATA[<]]> #{ntcMttrNo}
+        ORDER BY TNMB.NTC_MTTR_NO DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectNoticeNext"
+            resultType="kr.ge.kwdi.gep.platform.domain.notice.dto.NoticeVO$Next">
+        /* selectNoticeNext [공지사항 다음 글 조회] */
+        SELECT
+            TNMB.NTC_MTTR_NO NEXT_NOTICE_NO,
+            TNMB.PST_TTL NEXT_NOTICE_TITLE
+        FROM
+            TB_NTC_MTTR_BBS TNMB
+        WHERE
+            TNMB.NTC_MTTR_NO <![CDATA[>]]> #{ntcMttrNo}
+        ORDER BY TNMB.NTC_MTTR_NO
+        LIMIT 1
+    </select>
+
+</mapper>

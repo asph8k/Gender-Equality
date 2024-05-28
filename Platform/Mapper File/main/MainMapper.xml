@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.platform.domain.main.dao.MainDAO">
+    <select id="selectCardImage" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.MultimediaVO$Result">
+        SELECT TGED.GNDR_EQLT_DATA_NO,
+               SUBSTRING_INDEX(TID.IMG_FILE_ACTL_STRG_NM, ',', 1) IMG_URL_ADDR,
+               TGED.DATA_TTL,
+               TGED.PBLCN_INST_NM
+        FROM TB_IMG_DATA TID
+        JOIN TB_GNDR_EQLT_DATA TGED ON TID.GNDR_EQLT_DATA_NO = TGED.GNDR_EQLT_DATA_NO
+        WHERE TID.IMG_DATA_TYPE_CD = 'ITC001'
+        ORDER BY TID.FRST_JOB_DT
+            LIMIT 9
+    </select>
+
+    <select id="selectPhotoImage" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.MultimediaVO$Result">
+        SELECT TGED.GNDR_EQLT_DATA_NO,
+               SUBSTRING_INDEX(TID.IMG_FILE_ACTL_STRG_NM, ',', 1) IMG_URL_ADDR,
+               TGED.DATA_TTL,
+               TGED.PBLCN_INST_NM
+        FROM TB_IMG_DATA TID
+        JOIN TB_GNDR_EQLT_DATA TGED ON TID.GNDR_EQLT_DATA_NO = TGED.GNDR_EQLT_DATA_NO
+        WHERE TID.IMG_DATA_TYPE_CD = 'ITC002'
+        ORDER BY TID.FRST_JOB_DT
+            LIMIT 9
+    </select>
+
+    <select id="selectWebtoonImage" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.MultimediaVO$Result">
+        SELECT TGED.GNDR_EQLT_DATA_NO,
+               TID.IMG_FILE_ACTL_STRG_NM,
+               TGED.DATA_TTL,
+               TGED.PBLCN_INST_NM
+        FROM TB_IMG_DATA TID
+        JOIN TB_GNDR_EQLT_DATA TGED ON TID.GNDR_EQLT_DATA_NO = TGED.GNDR_EQLT_DATA_NO
+        WHERE TID.IMG_DATA_TYPE_CD = 'ITC003'
+        ORDER BY TID.FRST_JOB_DT
+            LIMIT 9
+    </select>
+
+
+
+    <select id="selectMainVdo" parameterType="kr.ge.kwdi.gep.platform.domain.main.dto.MainVdoVO$Param" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.MainVdoVO$Result">
+        SELECT TGED.GNDR_EQLT_DATA_NO, TVD.VDO_URL_ADDR as IMG_URL_ADDR, TGED.DATA_TTL, TGED.PBLCN_INST_NM
+        FROM TB_VDO_DATA TVD
+        LEFT JOIN TB_GNDR_EQLT_DATA TGED ON TVD.GNDR_EQLT_DATA_NO = TGED.GNDR_EQLT_DATA_NO
+        WHERE TGED.DATA_TYPE_CD = 'GED006'
+        ORDER BY TVD.FRST_JOB_DT
+            LIMIT 9
+    </select>
+
+    <select id="selectDataBySubject" parameterType="kr.ge.kwdi.gep.platform.domain.main.dto.BySubjectVO$Param" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.BySubjectVO$Result">
+        (SELECT TGED.GNDR_EQLT_DATA_NO,
+                TGED.DATA_TTL,
+                TGED.DATA_PBLS_DT,
+                TGED.DATA_TYPE_CD,
+                TGED.INTR_INST_CD,
+                TGED.PBLCN_INST_NM,
+                TGED.ORGN_ADDR_MVMN_YN as LINK_YN,
+                TGED.ORGN_ADDR
+        FROM TB_GNDR_EQLT_DATA TGED
+        WHERE TGED.DATA_CLSF_SYST_CD LIKE CONCAT('%', #{dataClsfSystCd}, '%')
+            AND TGED.INTR_INST_CD = 'IIS001'
+            AND <![CDATA[
+            (substring(TGED.DATA_PBLS_DT, 1, 4) = YEAR(CURDATE()) OR substring(TGED.DATA_PBLS_DT, 1, 4) = YEAR(CURDATE()) -1)
+            ]]>
+            AND TGED.DATA_DEL_YN = 'N'
+            AND TGED.DATA_RLS_YN = 'Y'
+        ORDER BY RAND()
+        LIMIT 3)
+        UNION ALL
+        (SELECT TGED.GNDR_EQLT_DATA_NO,
+                TGED.DATA_TTL,
+                TGED.DATA_PBLS_DT,
+                TGED.DATA_TYPE_CD,
+                TGED.INTR_INST_CD,
+                TGED.PBLCN_INST_NM,
+                TGED.ORGN_ADDR_MVMN_YN AS LINK_YN,
+                TGED.ORGN_ADDR
+         FROM TB_GNDR_EQLT_DATA TGED
+         WHERE TGED.DATA_CLSF_SYST_CD LIKE CONCAT('%', #{dataClsfSystCd}, '%')
+           AND TGED.INTR_INST_CD != 'IIS001'
+            AND <![CDATA[
+            (substring(TGED.DATA_PBLS_DT, 1, 4) = YEAR(CURDATE()) OR substring(TGED.DATA_PBLS_DT, 1, 4) = YEAR(CURDATE()) -1)
+            ]]>
+            AND TGED.DATA_DEL_YN = 'N'
+            AND TGED.DATA_RLS_YN = 'Y'
+         ORDER BY RAND()
+             LIMIT 3)
+    </select>
+
+    <select id="selectMainNews" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.MainNewsVO$Result">
+        SELECT
+            TGED.GNDR_EQLT_DATA_NO,
+            CASE
+                WHEN INSTR(TND.NWS_IMG_URL_ADDR, '\n') > 0
+                    THEN CONCAT('https://www.bigkinds.or.kr/resources/images', LEFT(TND.NWS_IMG_URL_ADDR, instr(TND.NWS_IMG_URL_ADDR, '\n') - 1))
+                WHEN NWS_IMG_URL_ADDR = '' THEN '/gep/api/v1/file/image/kwdi/ZGVmYXVsdC5qcGc'
+                ELSE CONCAT('https://www.bigkinds.or.kr/resources/images', TND.NWS_IMG_URL_ADDR) END NWS_IMG_URL_ADDR,
+            TGED.DATA_TTL,
+            TND.ORGL_ADDR
+        FROM TB_NWS_DATA TND
+        JOIN TB_GNDR_EQLT_DATA TGED ON TND.GNDR_EQLT_DATA_NO = TGED.GNDR_EQLT_DATA_NO
+        ORDER BY TND.FRST_JOB_DT
+        LIMIT 12
+    </select>
+
+    <select id="selectMainNewsConverage" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.MainNewsConverageVO$Result">
+        SELECT TGED.GNDR_EQLT_DATA_NO, TGED.DATA_TTL, TGED.DATA_CN, TGED.ATCH_FILE_YN ,TGED.ATCH_FILE_NO
+        FROM TB_GNDR_EQLT_DATA TGED
+        WHERE TGED.DATA_TYPE_CD = 'GED010'
+        ORDER BY TGED.FRST_JOB_DT
+        LIMIT 5
+    </select>
+
+    <select id="selectDataBySubjectAndIntr" parameterType="kr.ge.kwdi.gep.platform.domain.main.dto.BySubjectVO$Param" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.BySubjectVO$Result">
+        SELECT TGED.GNDR_EQLT_DATA_NO, TGED.DATA_TTL, TGED.DATA_PBLS_DT, TGED.DATA_TYPE_CD, TGED.INTR_INST_CD
+        FROM TB_GNDR_EQLT_DATA TGED
+        WHERE TGED.DATA_CLSF_SYST_CD LIKE CONCAT('%', #{dataClsfSystCd}, '%')
+        AND TGED.INTR_INST_CD = 'IIS001'
+        ORDER BY TGED.FRST_JOB_DT
+        LIMIT 12
+    </select>
+
+    <!-- 공지사항 목록 조회 -->
+    <select id="selectMainNotice" resultType="kr.ge.kwdi.gep.platform.domain.main.dto.MainNoticeVO$Result">
+        SELECT
+            TNMB.NTC_MTTR_NO ID,
+            TNMB.PST_TTL TITLE,
+            TNMB.FRST_JOB_DT CREATED
+        FROM
+            TB_NTC_MTTR_BBS TNMB
+        WHERE  TNMB.PST_DEL_YN = 'N'
+        AND TNMB.PST_CN_RLS_YN = 'Y'
+        ORDER BY
+            TNMB.NTC_MTTR_NO DESC
+        LIMIT 5
+    </select>
+</mapper>

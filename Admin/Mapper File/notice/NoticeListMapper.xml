@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.admin.domain.notice.dao.NoticeListDAO">
+
+    <!-- 공지사항 목록 조회 -->
+    <select id="selectNoticeList" parameterType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$SearchParam" resultType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$ListResult">
+        SELECT
+            tnmb.NTC_MTTR_NO ID,
+            tnmb.PST_TTL TITLE,
+            tnmb.FRST_JOB_DT CREATEDAT,
+            tnmb.PST_CN_RLS_YN VISIBLE,
+            tnmb.FRST_JOB_OBJ
+        FROM
+            TB_NTC_MTTR_BBS tnmb LEFT JOIN TB_NTC_MTTR_ATCH_FILE tnmaf
+            ON tnmb.NTC_MTTR_NO = tnmaf.ATCH_FILE_NO
+            LEFT JOIN TB_MNGR tm ON tnmb.NTC_MTTR_NO = tm.MNGR_NO
+        <where>
+        AND tnmb.PST_DEL_YN = 'N'
+            <if test="q != null">
+                <if test="searchType == 'title'">
+                    AND tnmb.PST_TTL LIKE CONCAT('%', #{q}, '%')
+                </if>
+            </if>
+        </where>
+        ORDER BY
+            tnmb.NTC_MTTR_NO DESC
+    </select>
+
+    <!-- 공지사항 상세 조회 -->
+    <select id="selectNoticeDetail" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$DetailResult">
+        SELECT
+            tnmb.NTC_MTTR_NO ID,
+            tnmb.MNGR_MBR_NO,
+            tnmb.PST_TTL TITLE,
+            tnmb.FRST_JOB_DT CREATEDAT,
+            tnmb.PST_CN_RLS_YN VISIBLE,
+            tnmb.PST_CN CONTENT
+        FROM
+            TB_NTC_MTTR_BBS tnmb
+        WHERE tnmb.NTC_MTTR_NO = #{entityId}
+    </select>
+
+    <!-- 공지사항 첨부파일 상세 조회 -->
+    <select id="selectNoticeFlies" parameterType="long" resultType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$FileResult">
+        SELECT
+            tnmaf.ATCH_FILE_NO ID,
+            tnmaf.NTC_MTTR_NO,
+            tnmaf.ATCH_FILE_ORGNL_NM ORIGINALNAME,
+            tnmaf.ATCH_FILE_ACTL_STRG_NM STORAGENAME,
+            tnmaf.ATCH_FILE_CLSF_CD CODE,
+            tnmaf.ATCH_FILE_SIZE FILESIZE,
+            tnmaf.FILE_ORDR ORDR
+        FROM
+            TB_NTC_MTTR_ATCH_FILE tnmaf
+        WHERE tnmaf.DEL_YN = 'N'
+        AND tnmaf.NTC_MTTR_NO = #{entityId}
+    </select>
+
+    <!-- 공지사항 리스트 생성 -->
+    <insert id="insertNoticeList" parameterType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$InsertParam" useGeneratedKeys="true" keyProperty="entityId">
+        INSERT INTO TB_NTC_MTTR_BBS
+        (
+            PST_TTL,
+            PST_CN,
+            PST_ATCH_FILE_YN,
+            PST_ATCH_FILE_CNT,
+            PST_CN_RLS_YN,
+            FRST_JOB_OBJ,
+            FRST_JOB_DT,
+            LAST_JOB_OBJ,
+            LAST_JOB_DT
+        )
+        VALUES
+        (
+            #{title},
+            #{content},
+            #{existFile},
+            #{fileCount},
+            #{visible},
+            #{frstJobObj},
+            NOW(),
+            #{lastJobObj},
+            NOW()
+        )
+    </insert>
+
+    <!-- 공지사항 첨부파일 등록 -->
+    <insert id="insertNoticeFile" parameterType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$FileInsertParam">
+        INSERT INTO TB_NTC_MTTR_ATCH_FILE
+        (
+            NTC_MTTR_NO,
+            ATCH_FILE_ORGNL_NM,
+            ATCH_FILE_ACTL_STRG_NM,
+            ATCH_FILE_CLSF_CD,
+            ATCH_FILE_SIZE,
+            FILE_ORDR,
+            FRST_JOB_DT,
+            LAST_JOB_DT
+        )
+        VALUES
+        (
+            #{entityId},
+            #{fileOrgnlNm},
+            #{fileActlStrgNm},
+            #{fileClsfCd},
+            #{fileSize},
+            1,
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- 공지사항 리스트 수정 -->
+    <update id="updateNoticeList" parameterType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$UpdateParam">
+        UPDATE TB_NTC_MTTR_BBS
+        SET
+            PST_TTL = #{title},
+            PST_CN_RLS_YN = #{visible},
+            PST_CN = #{content},
+            LAST_JOB_OBJ = #{lastJobObj},
+            LAST_JOB_DT = NOW()
+        WHERE NTC_MTTR_NO = #{entityId}
+    </update>
+
+    <!-- 공지사항 리스트 삭제 -->
+    <delete id="deleteNoticeList" parameterType="kr.ge.kwdi.gep.admin.domain.notice.dto.NoticeListVO$DeleteParam">
+        UPDATE TB_NTC_MTTR_BBS
+        SET
+            PST_DEL_YN = 'Y',
+            LAST_JOB_DT = NOW()
+        WHERE PST_DEL_YN = 'N'
+        AND NTC_MTTR_NO IN <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </delete>
+
+    <!-- 첨부파일 삭제 -->
+    <update id="deleteNoticeFlie" parameterType="list">
+        UPDATE TB_NTC_MTTR_ATCH_FILE
+        SET
+            DEL_YN = 'Y',
+            LAST_JOB_DT = NOW()
+        WHERE DEL_YN = 'N'
+        AND ATCH_FILE_NO IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">#{item}</foreach>
+    </update>
+</mapper>

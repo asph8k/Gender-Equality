@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.ge.kwdi.gep.platform.domain.faq.dao.FaqDAO">
+    <select id="selectFaqList" resultType="kr.ge.kwdi.gep.platform.domain.faq.dto.FaqVO$Result">
+        SELECT
+        TF.FAQ_NO,
+        TF.FAQ_TTL,
+        TF.FAQ_CN,
+        TF.FAQ_ORDR
+        FROM TB_FAQ TF
+        <where>
+            AND TF.DEL_YN = 'N'
+            AND TF.PSTD_CD = 'Y'
+            <if test="faqNo != null and faqNo != ''">
+                AND TF.FAQ_NO = #{faqNo}
+            </if>
+        </where>
+        ORDER BY TF.FAQ_ORDR DESC
+    </select>
+
+    <select id="selectFaqDetail" parameterType="kr.ge.kwdi.gep.platform.domain.faq.dto.FaqVO$Param"
+            resultType="kr.ge.kwdi.gep.platform.domain.faq.dto.FaqVO$Result">
+        SELECT TF.FAQ_NO,
+               TF.FAQ_TTL,
+               TF.FAQ_CN,
+               TF.FAQ_ORDR
+        FROM TB_FAQ TF
+        WHERE TF.FAQ_NO = #{faqNo}
+    </select>
+
+
+</mapper>
